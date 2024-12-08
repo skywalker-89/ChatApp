@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 const FriendPageStyle = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f4f4f4",
+    backgroundColor: "#f9f9fb", // Light background for a clean look
     paddingHorizontal: 15,
     paddingTop: 50,
   },
@@ -14,24 +14,30 @@ const FriendPageStyle = StyleSheet.create({
   },
   searchBar: {
     flex: 1,
-    height: 40,
+    height: 45,
     borderRadius: 10,
-    backgroundColor: "#e8e8e8",
+    backgroundColor: "#ffffff",
     paddingHorizontal: 15,
     fontSize: 16,
+    borderWidth: 1,
+    borderColor: "#dcdcdc", // Subtle border for depth
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 3 },
   },
   addButton: {
     backgroundColor: "#007bff",
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 10,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
+    elevation: 6,
+    shadowColor: "#007bff",
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
   },
   friendList: {
@@ -43,45 +49,51 @@ const FriendPageStyle = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 15,
     paddingHorizontal: 15,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    marginBottom: 10,
+    backgroundColor: "#ffffff",
+    borderRadius: 12,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: "#e0e0e0",
-    elevation: 2,
+    borderColor: "#eaeaea", // Subtle border for definition
+    elevation: 3,
     shadowColor: "#000",
     shadowOpacity: 0.1,
-    shadowRadius: 3,
+    shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
-    overflow: "hidden",
+    position: "relative", // Ensure position is relative for the dot
   },
   profileImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 55,
+    height: 55,
+    borderRadius: 27.5,
     marginRight: 15,
+    borderWidth: 1,
+    borderColor: "#dddddd",
   },
   friendDetails: {
     flex: 1,
   },
   friendName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#000",
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#333333", // Darker color for text
   },
   friendOrganization: {
     fontSize: 14,
-    color: "#666",
-    marginTop: 2,
+    color: "#888888",
+    marginTop: 4,
   },
   unfriendButton: {
-    backgroundColor: "#ff4d4f", // Red for unfriend button
+    backgroundColor: "#ff4d4f",
     justifyContent: "center",
     alignItems: "center",
     width: 80,
-    height: 81.5, // Ensure it matches the height of the friendItem
-    borderRadius: 8, // Maintain rounded corners
-    paddingHorizontal: 10, // Adjust padding for a consistent look
+    height: 81.5,
+    borderRadius: 12,
+    elevation: 4,
+    shadowColor: "#ff4d4f",
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
   },
   unfriendText: {
     color: "#fff",
@@ -89,18 +101,33 @@ const FriendPageStyle = StyleSheet.create({
     fontWeight: "600",
   },
   editButton: {
-    backgroundColor: "#ffa500", // Red for unfriend button
+    backgroundColor: "#ff9800",
     justifyContent: "center",
     alignItems: "center",
     width: 80,
-    height: 81.5, // Ensure it matches the height of the friendItem
-    borderRadius: 8, // Maintain rounded corners
-    paddingHorizontal: 10, // Adjust padding for a consistent look
+    height: 81.5,
+    borderRadius: 12,
+    elevation: 4,
+    shadowColor: "#ff9800",
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 2 },
   },
   editText: {
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
+  },
+  onlineIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 12,
+    backgroundColor: "green", // You can use 'red' or 'green' for online/offline status
+    position: "absolute",
+    // top: 3, // Position it at the top-right corner of the profile image
+    // right: 3, // Position it at the top-right corner of the profile image
+    borderWidth: 1,
+    borderColor: "#ffffff", // Add a white border to make it stand out on different backgrounds
   },
 });
 

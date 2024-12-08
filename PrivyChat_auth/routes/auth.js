@@ -102,32 +102,98 @@ router.post("/change-password", authenticateToken, async (req, res) => {
   }
 });
 
-// Update Profile Picture
 router.post(
   "/update-profile-pic",
   authenticateToken,
-  upload.single("profile_pic"),
+  upload.single("profile_pic"), // Handling the file upload
   async (req, res) => {
+    console.log("Request body:", req.body);
+    console.log("File:", req.file);
+
     try {
+      // Check if file exists and if the buffer is not empty
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      // Log the file buffer size
+      console.log("File buffer size:", req.file.buffer.length);
+
+      if (req.file.buffer.length === 0) {
+        return res.status(400).json({ error: "File is empty" });
+      }
+
       const userId = req.user.id;
 
-      // Upload profile picture to Cloudinary
-      const result = await cloudinary.uploader.upload_stream(
-        { folder: "profile_pictures" },
-        (err, uploadResult) => {
-          if (err) throw new Error("Cloudinary upload failed");
-          return uploadResult;
-        }
+      // Fetch the user's current profile picture URL
+      const result = await pool.query(
+        "SELECT profile_pic FROM users WHERE id = $1",
+        [userId]
       );
+      const user = result.rows[0];
+      console.log(user);
+
+      // If no user found, return an error
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // If a current profile picture exists, delete it from Cloudinary
+      if (user.profile_pic) {
+        // Extract the public_id from the profile_pic URL
+        const publicId = user.profile_pic
+          .split("/")
+          .slice(-2)
+          .join("/")
+          .replace(/\.[^.]+$/, ""); // Get the part after 'profile_pictures/'
+        console.log("Deleting Cloudinary image with public_id:", publicId);
+
+        //profile_pictures/nooajlkl1dzghjfdzhnb
+
+        // Delete the old profile picture from Cloudinary
+        await cloudinary.uploader.destroy(publicId);
+      }
+
+      // Convert file buffer to base64
+      const fileBase64 = req.file.buffer.toString("base64");
+
+      // Log the base64 string (make sure it's not empty or malformed)
+      console.log("Base64 String: ", fileBase64.substring(0, 50)); // Log first 50 characters
+
+      // Correctly format the base64 string for Cloudinary
+      const base64String = `data:${req.file.mimetype};base64,${fileBase64}`;
+
+      // Upload to Cloudinary
+      const uploadResult = await cloudinary.uploader.upload(base64String, {
+        folder: "profile_pictures", // Specify folder (optional)
+      });
+
+      console.log("Cloudinary upload result:", uploadResult);
+
+      if (!uploadResult.secure_url) {
+        return res
+          .status(400)
+          .json({ error: "Failed to upload image to Cloudinary" });
+      }
 
       // Update profile picture URL in the database
-      const updatedUser = await pool.query(
+      const updatedUserResult = await pool.query(
         "UPDATE users SET profile_pic = $1 WHERE id = $2 RETURNING *",
-        [result.secure_url, userId]
+        [uploadResult.secure_url, userId]
       );
 
-      res.status(200).json({ user: updatedUser.rows[0] });
+      console.log("Updated user result:", updatedUserResult.rows[0]);
+
+      // If no rows are updated, something went wrong with the database query
+      if (updatedUserResult.rowCount === 0) {
+        return res
+          .status(400)
+          .json({ error: "Profile picture update failed in database" });
+      }
+
+      res.status(200).json({ user: updatedUserResult.rows[0] });
     } catch (err) {
+      console.error("Error updating profile picture:", err);
       res.status(400).json({
         error: "Failed to update profile picture",
         details: err.message,
@@ -165,6 +231,7 @@ router.get("/friends", authenticateToken, async (req, res) => {
   u.name, 
   u.email, 
   u.profile_pic,
+  u.active_status,
   f.organization
 FROM 
   friends f
@@ -284,6 +351,124 @@ router.put("/friends/:friendId", authenticateToken, async (req, res) => {
       error: "Failed to update organization",
       details: err.message,
     });
+  }
+});
+
+// Mark user as active
+router.put("/user/active", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Update the user's active status in the database
+    const result = await pool.query(
+      "UPDATE users SET active_status = 'active' WHERE id = $1 RETURNING *",
+      [userId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res
+      .status(200)
+      .json({ message: "User marked as active", user: result.rows[0] });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Failed to mark user as active", details: err.message });
+  }
+});
+
+// Mark user as inactive
+router.put("/user/inactive", authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Update the user's active status in the database
+    const result = await pool.query(
+      "UPDATE users SET active_status = 'inactive' WHERE id = $1 RETURNING *",
+      [userId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res
+      .status(200)
+      .json({ message: "User marked as inactive", user: result.rows[0] });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Failed to mark user as inactive", details: err.message });
+  }
+});
+
+// Upload endpoint for an image
+router.post("/image-upload", upload.single("file"), async (req, res) => {
+  // console.log(req.body.roomId);
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    // Convert file buffer to Base64
+    const fileBase64 = req.file.buffer.toString("base64");
+
+    // Format Base64 string for Cloudinary
+    const base64String = `data:${req.file.mimetype};base64,${fileBase64}`;
+
+    // Upload to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(base64String, {
+      folder: `rooms/${req.body.roomId}`, // Optional: Specify folder
+    });
+
+    // Check for secure URL
+    if (!uploadResult.secure_url) {
+      return res
+        .status(400)
+        .json({ error: "Failed to upload image to Cloudinary" });
+    }
+
+    // Respond with the uploaded image URL
+    res.status(200).json({ imageUrl: uploadResult.secure_url });
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    res.status(500).json({ error: "Failed to upload image" });
+  }
+});
+
+// Upload endpoint for an image
+router.post("/audio-upload", upload.single("file"), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    // Convert file buffer to Base64
+    const fileBase64 = req.file.buffer.toString("base64");
+
+    // Format Base64 string for Cloudinary
+    const base64String = `data:${req.file.mimetype};base64,${fileBase64}`;
+
+    // Upload to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(base64String, {
+      resource_type: "video", // Use video for audio files
+      folder: `rooms/${req.body.roomId}`,
+    });
+
+    // Check for secure URL
+    if (!uploadResult.secure_url) {
+      return res
+        .status(400)
+        .json({ error: "Failed to upload audio to Cloudinary" });
+    }
+
+    // Respond with the uploaded audio URL
+    res.status(200).json({ audioUrl: uploadResult.secure_url });
+  } catch (error) {
+    console.error("Error uploading audio:", error);
+    res.status(500).json({ error: "Failed to upload audio" });
   }
 });
 
